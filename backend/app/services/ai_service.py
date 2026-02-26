@@ -7,6 +7,7 @@ from app.config import settings
 from app.schemas.recipe import RecipeResponse, IngredientResponse
 from pydantic import ValidationError
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,8 @@ class AIService:
     def __init__(self):
         self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         self.model_id = 'gemini-flash-latest'  # Using stable latest flash model
-        self.max_retries = 2
+        self.max_retries = 3
+        self.retry_delay = 2  # seconds
 
     async def generate_recipe(self, dish_name: str) -> Dict[str, Any]:
         """Generate recipe from dish name with strict JSON output"""
@@ -244,17 +246,37 @@ User: {message}
 Assistant:"""
 
     async def _generate_with_gemini(self, prompt: str) -> str:
-        """Call Gemini API using new google-genai package"""
+        """Call Gemini API with retry logic for transient errors"""
 
-        try:
-            response = self.client.models.generate_content(
-                model=self.model_id,
-                contents=prompt
-            )
-            return response.text
-        except Exception as e:
-            logger.error(f"Gemini API error: {e}")
-            raise ValueError(f"AI generation failed: {str(e)}")
+        for attempt in range(self.max_retries):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_id,
+                    contents=prompt
+                )
+                return response.text
+
+            except Exception as e:
+                error_str = str(e)
+                logger.error(f"Gemini API error (attempt {attempt + 1}/{self.max_retries}): {e}")
+
+                # Check if it's a retryable error (503, 429, etc.)
+                is_retryable = any(code in error_str for code in ['503', '429', 'UNAVAILABLE', 'RESOURCE_EXHAUSTED'])
+
+                if is_retryable and attempt < self.max_retries - 1:
+                    # Exponential backoff: 2s, 4s, 8s
+                    delay = self.retry_delay * (2 ** attempt)
+                    logger.info(f"Retrying in {delay} seconds...")
+                    await asyncio.sleep(delay)
+                    continue
+
+                # Non-retryable error or max retries reached
+                if is_retryable:
+                    raise ValueError("The AI service is currently experiencing high demand. Please try again in a few moments.")
+                else:
+                    raise ValueError(f"AI generation failed: {str(e)}")
+
+        raise ValueError("Failed to generate response after multiple retries")
 
     def _extract_json(self, response: str) -> Dict[str, Any]:
         """Extract JSON from AI response"""
