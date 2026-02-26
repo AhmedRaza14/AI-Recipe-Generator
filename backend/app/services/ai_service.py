@@ -127,28 +127,142 @@ class AIService:
         """Check if query is cooking-related"""
 
         cooking_keywords = [
-            # Cooking actions
-            'recipe', 'cook', 'bake', 'fry', 'grill', 'roast', 'boil', 'steam',
-            'ingredient', 'dish', 'meal', 'prepare', 'serve', 'marinate',
-            # Food categories
-            'food', 'cuisine', 'flavor', 'taste', 'nutrition',
-            'kitchen', 'chef', 'culinary', 'spice', 'sauce', 'seasoning',
-            # Proteins
-            'meat', 'chicken', 'beef', 'mutton', 'lamb', 'pork', 'fish',
-            'seafood', 'turkey', 'duck', 'egg', 'protein', 'tofu',
-            # Carbs & grains
-            'pasta', 'rice', 'bread', 'noodle', 'grain', 'wheat', 'flour',
-            # Vegetables & produce
-            'vegetable', 'fruit', 'salad', 'greens', 'tomato', 'onion', 'garlic',
-            # Dishes
-            'biryani', 'curry', 'stew', 'soup', 'pizza', 'burger', 'sandwich',
-            'dessert', 'cake', 'pie', 'pastry', 'appetizer', 'entree',
-            # Dairy
-            'cheese', 'milk', 'butter', 'cream', 'yogurt', 'dairy',
-            # Cooking terms
-            'temperature', 'oven', 'stove', 'pan', 'pot', 'utensil',
-            'how to make', 'how to cook', 'cooking time', 'serving'
-        ]
+
+    # Core cooking actions
+    'recipe', 'cook', 'cooking', 'bake', 'baking', 'fry', 'deep fry', 'shallow fry',
+    'pan fry', 'grill', 'bbq', 'barbecue', 'roast', 'boil', 'steam',
+    'saute', 'sauté', 'stir fry', 'blanch', 'braise', 'simmer',
+    'poach', 'slow cook', 'pressure cook', 'air fry', 'smoke',
+    'ferment', 'marinate', 'season', 'whisk', 'knead',
+    'mix', 'blend', 'chop', 'slice', 'dice', 'mince',
+    'julienne', 'caramelize', 'reduce', 'preheat',
+
+    # General food terms
+    'ingredient', 'dish', 'meal', 'food', 'cuisine', 'flavor',
+    'taste', 'savory', 'sweet', 'spicy', 'sour', 'bitter', 'umami',
+    'nutrition', 'calories', 'protein', 'carbs', 'fat',
+    'kitchen', 'chef', 'culinary', 'garnish', 'plating',
+
+    # Meal types
+    'breakfast', 'lunch', 'dinner', 'brunch', 'snack',
+    'starter', 'main course', 'side dish', 'appetizer',
+    'entree', 'dessert', 'beverage', 'drink',
+    'iftar', 'sehri', 'supper',
+
+    # Proteins
+    'meat', 'chicken', 'beef', 'mutton', 'lamb', 'goat',
+    'pork', 'fish', 'seafood', 'prawn', 'shrimp',
+    'crab', 'lobster', 'salmon', 'tuna', 'tilapia',
+    'turkey', 'duck', 'egg', 'tofu', 'soy', 'soya',
+    'paneer', 'cottage cheese', 'bacon', 'sausage',
+    'ham', 'keema', 'minced meat',
+
+    # Grains & carbs
+    'rice', 'basmati', 'brown rice', 'pasta', 'spaghetti',
+    'macaroni', 'penne', 'noodle', 'ramen', 'udon',
+    'bread', 'bun', 'bagel', 'flour', 'wheat',
+    'oats', 'quinoa', 'barley', 'corn', 'maize',
+    'roti', 'naan', 'chapati', 'paratha',
+    'tortilla', 'wrap', 'pita',
+
+    # Vegetables
+    'vegetable', 'tomato', 'onion', 'garlic', 'ginger',
+    'potato', 'sweet potato', 'carrot', 'spinach',
+    'broccoli', 'cauliflower', 'capsicum', 'bell pepper',
+    'cabbage', 'lettuce', 'cucumber', 'zucchini',
+    'eggplant', 'brinjal', 'okra', 'peas', 'corn',
+    'mushroom', 'beetroot', 'pumpkin',
+
+    # Fruits
+    'fruit', 'apple', 'banana', 'mango', 'orange',
+    'strawberry', 'blueberry', 'raspberry',
+    'pineapple', 'grape', 'lemon', 'lime',
+    'watermelon', 'peach', 'pear', 'pomegranate',
+    'kiwi', 'avocado',
+
+    # Legumes & pulses
+    'lentil', 'dal', 'dall', 'bean', 'black bean',
+    'kidney bean', 'rajma', 'chickpea', 'chole',
+    'peas', 'legume', 'moong', 'masoor', 'toor',
+
+    # Dairy
+    'milk', 'butter', 'cream', 'cheese',
+    'mozzarella', 'cheddar', 'parmesan',
+    'ricotta', 'yogurt', 'curd', 'ghee',
+    'cream cheese', 'condensed milk',
+
+    # Spices & herbs
+    'turmeric', 'cumin', 'coriander', 'chili',
+    'paprika', 'garam masala', 'oregano',
+    'thyme', 'basil', 'parsley', 'rosemary',
+    'cardamom', 'clove', 'cinnamon',
+    'mustard seed', 'fenugreek',
+    'bay leaf', 'star anise',
+    'black pepper', 'white pepper',
+    'red chili powder',
+
+    # Sauces & condiments
+    'ketchup', 'mustard', 'mayonnaise',
+    'soy sauce', 'vinegar', 'olive oil',
+    'sesame oil', 'hot sauce', 'bbq sauce',
+    'chutney', 'pickle', 'relish',
+    'honey', 'maple syrup',
+
+    # Indian dishes
+    'biryani', 'pulao', 'curry', 'tikka',
+    'masala', 'tandoori', 'korma',
+    'vindaloo', 'samosa', 'pakora',
+    'dosa', 'idli', 'vada', 'chaat',
+    'chaap', 'rajma', 'chole',
+    'haleem', 'nihari', 'karahi',
+
+    # Asian dishes
+    'sushi', 'ramen', 'dumpling',
+    'fried rice', 'spring roll',
+    'kimchi', 'pad thai',
+
+    # Western dishes
+    'pizza', 'burger', 'sandwich',
+    'taco', 'burrito', 'lasagna',
+    'pasta', 'steak', 'stew',
+    'soup', 'risotto', 'paella',
+
+    # Desserts & baking
+    'cake', 'cupcake', 'brownie',
+    'cookie', 'biscuit', 'pastry',
+    'pie', 'pudding', 'custard',
+    'ice cream', 'chocolate',
+    'frosting', 'icing', 'batter',
+    'dough', 'muffin', 'waffle',
+    'pancake', 'donut',
+
+    # Diet types
+    'vegetarian', 'vegan', 'keto',
+    'low carb', 'high protein',
+    'gluten free', 'dairy free',
+    'halal', 'organic', 'healthy',
+    'weight loss',
+
+    # Kitchen equipment
+    'oven', 'stove', 'pan', 'pot',
+    'pressure cooker', 'air fryer',
+    'blender', 'mixer', 'whisk',
+    'knife', 'spoon', 'fork',
+    'spatula', 'grater',
+    'microwave', 'toaster',
+
+    # Beverages
+    'tea', 'coffee', 'juice',
+    'smoothie', 'shake', 'mocktail',
+    'milkshake', 'lassi',
+
+    # Common phrases
+    'how to make', 'how to cook',
+    'step by step recipe',
+    'easy recipe', 'quick recipe',
+    'cooking time', 'serving size',
+    'ingredients list'
+]
 
         text_lower = text.lower()
         return any(keyword in text_lower for keyword in cooking_keywords)
