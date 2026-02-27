@@ -1,0 +1,8 @@
+.buttonContainer {
+  width: 100%;
+}
+
+.googleButton {
+  display: flex;
+  justify-content: center;
+}

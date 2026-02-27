@@ -5,7 +5,6 @@ from app.routers import recipe, auth, chat, saved
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.error_handler import error_handler_middleware
 
-
 app = FastAPI(
     title="AI Recipe Generator API",
     description="Production-ready recipe generation API with Gemini AI",

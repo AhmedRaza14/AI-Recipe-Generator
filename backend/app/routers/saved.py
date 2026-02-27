@@ -31,7 +31,8 @@ async def get_saved_recipes(
     """Get all saved recipes for user"""
     recipe_repo = RecipeRepository(db)
     recipes = recipe_repo.get_by_user_id(current_user.id)
-    return recipes
+    # Extract recipe JSON data and add the database ID
+    return [{"id": recipe.id, **recipe.recipe_json} for recipe in recipes]
 
 
 @router.delete("/recipes/{recipe_id}")
