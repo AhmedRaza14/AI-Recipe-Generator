@@ -105,6 +105,21 @@ class APIClient {
     const response = await this.client.delete(`/saved/recipes/${recipeId}`);
     return response.data;
   }
+
+  async getCurrentUser() {
+    const response = await this.client.get('/user/me');
+    return response.data;
+  }
+
+  async updateAvatar(avatar: string) {
+    const response = await this.client.put('/user/avatar', { avatar });
+    return response.data;
+  }
+
+  async getAvailableAvatars() {
+    const response = await this.client.get('/user/avatars');
+    return response.data;
+  }
 }
 
 export const apiClient = new APIClient();

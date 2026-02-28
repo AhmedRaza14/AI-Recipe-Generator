@@ -54,7 +54,9 @@ export default function AuthForm({ mode: initialMode = 'login' }: AuthFormProps)
       setAuth(response.user, response.access_token);
       router.push('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || `${mode === 'signup' ? 'Signup' : 'Login'} failed`);
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || `${mode === 'signup' ? 'Signup' : 'Login'} failed`;
+      toast.error(errorMessage);
+      console.error('Auth error:', error);
     } finally {
       setIsLoading(false);
     }

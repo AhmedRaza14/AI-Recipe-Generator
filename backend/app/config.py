@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -23,14 +23,23 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
 
-    # Gemini AI
-    GEMINI_API_KEY: str
+    # Gemini AI (Multiple keys for quota rotation)
+    GEMINI_API_KEY_1: str
+    GEMINI_API_KEY_2: Optional[str] = None
 
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
+
+    @property
+    def gemini_api_keys(self) -> List[str]:
+        """Return list of available Gemini API keys"""
+        keys = [self.GEMINI_API_KEY_1]
+        if self.GEMINI_API_KEY_2:
+            keys.append(self.GEMINI_API_KEY_2)
+        return keys
 
     class Config:
         env_file = ".env"

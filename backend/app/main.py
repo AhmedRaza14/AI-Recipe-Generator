@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import recipe, auth, chat, saved
+from app.routers import recipe, auth, chat, saved, user
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.error_handler import error_handler_middleware
 
@@ -31,6 +31,7 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(recipe.router, prefix="/recipe", tags=["Recipe"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(saved.router, prefix="/saved", tags=["Saved Recipes"])
+app.include_router(user.router, prefix="/user", tags=["User"])
 
 
 @app.get("/")

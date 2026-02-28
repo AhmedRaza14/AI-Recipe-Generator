@@ -14,10 +14,29 @@ logger = logging.getLogger(__name__)
 
 class AIService:
     def __init__(self):
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        self.api_keys = settings.gemini_api_keys
+        self.current_key_index = 0
+        self.client = genai.Client(api_key=self.api_keys[self.current_key_index])
         self.model_id = 'gemini-flash-latest'  # Using stable latest flash model
         self.max_retries = 3
         self.retry_delay = 2  # seconds
+        logger.info(f"Initialized AIService with {len(self.api_keys)} API key(s)")
+
+    def _rotate_api_key(self) -> bool:
+        """Rotate to next API key. Returns True if rotation successful, False if no more keys."""
+        if len(self.api_keys) <= 1:
+            return False
+
+        self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+
+        # Check if we've cycled through all keys
+        if self.current_key_index == 0:
+            return False
+
+        # Create new client with rotated key
+        self.client = genai.Client(api_key=self.api_keys[self.current_key_index])
+        logger.info(f"Rotated to API key #{self.current_key_index + 1}")
+        return True
 
     async def generate_recipe(self, dish_name: str) -> Dict[str, Any]:
         """Generate recipe from dish name with strict JSON output"""
@@ -360,37 +379,67 @@ User: {message}
 Assistant:"""
 
     async def _generate_with_gemini(self, prompt: str) -> str:
-        """Call Gemini API with retry logic for transient errors"""
+        """Call Gemini API with retry logic for transient errors and key rotation for quota errors"""
 
-        for attempt in range(self.max_retries):
-            try:
-                response = self.client.models.generate_content(
-                    model=self.model_id,
-                    contents=prompt
-                )
-                return response.text
+        keys_tried = 0
+        max_keys_to_try = len(self.api_keys)
 
-            except Exception as e:
-                error_str = str(e)
-                logger.error(f"Gemini API error (attempt {attempt + 1}/{self.max_retries}): {e}")
+        while keys_tried < max_keys_to_try:
+            for attempt in range(self.max_retries):
+                try:
+                    response = self.client.models.generate_content(
+                        model=self.model_id,
+                        contents=prompt
+                    )
+                    return response.text
 
-                # Check if it's a retryable error (503, 429, etc.)
-                is_retryable = any(code in error_str for code in ['503', '429', 'UNAVAILABLE', 'RESOURCE_EXHAUSTED'])
+                except Exception as e:
+                    error_str = str(e)
+                    logger.error(f"Gemini API error (key #{self.current_key_index + 1}, attempt {attempt + 1}/{self.max_retries}): {e}")
 
-                if is_retryable and attempt < self.max_retries - 1:
-                    # Exponential backoff: 2s, 4s, 8s
-                    delay = self.retry_delay * (2 ** attempt)
-                    logger.info(f"Retrying in {delay} seconds...")
-                    await asyncio.sleep(delay)
-                    continue
+                    # Check for quota exhaustion
+                    if 'quota' in error_str.lower() or 'RESOURCE_EXHAUSTED' in error_str:
+                        # Try rotating to next API key
+                        if self._rotate_api_key():
+                            logger.info(f"Quota hit on key #{self.current_key_index}, rotating to next key")
+                            keys_tried += 1
+                            break  # Break retry loop, continue with new key
+                        else:
+                            # No more keys to try, show quota error
+                            retry_match = re.search(r'retry in (\d+)', error_str.lower())
+                            if retry_match:
+                                retry_seconds = int(retry_match.group(1))
+                                retry_minutes = retry_seconds // 60
+                                if retry_minutes > 0:
+                                    raise ValueError(f"API quota limit reached on all keys. Please try again in {retry_minutes} minutes.")
+                                else:
+                                    raise ValueError(f"API quota limit reached on all keys. Please try again in {retry_seconds} seconds.")
+                            else:
+                                raise ValueError("API quota limit reached on all keys. Please try again later or upgrade your API plan.")
 
-                # Non-retryable error or max retries reached
-                if is_retryable:
-                    raise ValueError("The AI service is currently experiencing high demand. Please try again in a few moments.")
-                else:
-                    raise ValueError(f"AI generation failed: {str(e)}")
+                    # Check if it's a retryable error (503, UNAVAILABLE)
+                    is_retryable = any(code in error_str for code in ['503', 'UNAVAILABLE'])
 
-        raise ValueError("Failed to generate response after multiple retries")
+                    if is_retryable and attempt < self.max_retries - 1:
+                        # Exponential backoff: 2s, 4s, 8s
+                        delay = self.retry_delay * (2 ** attempt)
+                        logger.info(f"Retrying in {delay} seconds...")
+                        await asyncio.sleep(delay)
+                        continue
+
+                    # Non-retryable error or max retries reached
+                    if is_retryable:
+                        raise ValueError("The AI service is currently experiencing high demand. Please try again in a few moments.")
+                    else:
+                        raise ValueError(f"AI generation failed. Please try again later.")
+
+            # If we broke out of retry loop due to key rotation, continue with new key
+            if keys_tried < max_keys_to_try:
+                continue
+            else:
+                break
+
+        raise ValueError("Failed to generate response after trying all available API keys")
 
     def _extract_json(self, response: str) -> Dict[str, Any]:
         """Extract JSON from AI response"""

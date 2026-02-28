@@ -57,7 +57,9 @@ export default function GoogleLoginButton() {
       toast.success('Successfully logged in!');
       router.push('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Login failed');
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Login failed';
+      toast.error(errorMessage);
+      console.error('Google login error:', error);
     }
   };
 

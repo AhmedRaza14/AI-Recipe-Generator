@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { apiClient } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import styles from './ChatWidget.module.css';
 
@@ -16,9 +17,27 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+
+  // Clear chat history when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setMessages([]);
+      setIsOpen(false);
+    }
+  }, [isAuthenticated]);
 
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
+
+    // Check if user is logged in
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      toast.error('Please login to use the AI assistant');
+      setIsOpen(false);
+      window.location.href = '/login';
+      return;
+    }
 
     const userMessage: Message = { role: 'user', content: inputValue.trim() };
     setMessages(prev => [...prev, userMessage]);
@@ -30,10 +49,27 @@ export default function ChatWidget() {
       const assistantMessage: Message = { role: 'assistant', content: response.response };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
-      toast.error('Failed to get response');
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || 'Failed to get response';
+      toast.error(errorMessage);
       setMessages(prev => prev.slice(0, -1));
+
+      // If unauthorized, redirect to login
+      if (error.response?.status === 401) {
+        toast.error('Please login to use the AI assistant');
+        setIsOpen(false);
+        window.location.href = '/login';
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleClearHistory = () => {
+    if (messages.length === 0) return;
+
+    if (confirm('Are you sure you want to clear the chat history?')) {
+      setMessages([]);
+      toast.success('Chat history cleared');
     }
   };
 
@@ -70,12 +106,23 @@ export default function ChatWidget() {
                 <p className={styles.headerSubtitle}>Ask me anything about cooking</p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className={styles.closeButton}
-            >
-              <XMarkIcon className={styles.closeIcon} />
-            </button>
+            <div className={styles.headerButtons}>
+              {messages.length > 0 && (
+                <button
+                  onClick={handleClearHistory}
+                  className={styles.clearButton}
+                  title="Clear chat history"
+                >
+                  <TrashIcon className={styles.clearIcon} />
+                </button>
+              )}
+              <button
+                onClick={() => setIsOpen(false)}
+                className={styles.closeButton}
+              >
+                <XMarkIcon className={styles.closeIcon} />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}

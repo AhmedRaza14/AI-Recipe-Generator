@@ -30,7 +30,9 @@ export default function IngredientsPage() {
       setRecipe(response.selected_recipe);
       toast.success('Recipe generated successfully!');
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to generate recipe');
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Failed to generate recipe';
+      toast.error(errorMessage);
+      console.error('Recipe generation error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +50,9 @@ export default function IngredientsPage() {
         toast.error('Please login to save recipes');
         router.push('/login');
       } else {
-        toast.error('Failed to save recipe');
+        const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Failed to save recipe';
+        toast.error(errorMessage);
+        console.error('Save recipe error:', error);
       }
     }
   };

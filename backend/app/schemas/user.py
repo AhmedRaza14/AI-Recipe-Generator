@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class UserBase(BaseModel):
@@ -12,6 +13,11 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    avatar: Optional[str] = "chef"
 
     class Config:
         from_attributes = True
+
+
+class UpdateAvatarRequest(BaseModel):
+    avatar: str

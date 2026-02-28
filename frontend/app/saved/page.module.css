@@ -66,14 +66,12 @@
 
 .recipesGrid {
   display: grid;
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
-.recipeItem {
-  position: relative;
-}
-
-.deleteButton {
-  margin-top: 1rem;
-  width: 100%;
+@media (max-width: 768px) {
+  .recipesGrid {
+    grid-template-columns: 1fr;
+  }
 }

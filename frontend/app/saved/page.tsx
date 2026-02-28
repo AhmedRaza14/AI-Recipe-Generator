@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { Recipe } from '@/lib/types';
-import RecipeCard from '@/components/recipe/RecipeCard';
+import SavedRecipeCard from '@/components/recipe/SavedRecipeCard';
 import Spinner from '@/components/ui/Spinner';
 import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
@@ -35,7 +35,9 @@ export default function SavedPage() {
         toast.error('Please login to view saved recipes');
         router.push('/login');
       } else {
-        toast.error('Failed to load saved recipes');
+        const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Failed to load saved recipes';
+        toast.error(errorMessage);
+        console.error('Fetch saved recipes error:', error);
       }
     } finally {
       setIsLoading(false);
@@ -47,8 +49,10 @@ export default function SavedPage() {
       await apiClient.deleteSavedRecipe(recipeId);
       setRecipes(recipes.filter(r => r.id !== recipeId));
       toast.success('Recipe deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete recipe');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Failed to delete recipe';
+      toast.error(errorMessage);
+      console.error('Delete recipe error:', error);
     }
   };
 
@@ -91,21 +95,11 @@ export default function SavedPage() {
         ) : (
           <div className={styles.recipesGrid}>
             {recipes.map((recipe) => (
-              <div key={recipe.id} className={styles.recipeItem}>
-                <RecipeCard
-                  recipe={recipe}
-                  showSaveButton={false}
-                />
-                <div className={styles.deleteButton}>
-                  <Button
-                    variant="danger"
-                    onClick={() => handleDelete(recipe.id!)}
-                    className="w-full"
-                  >
-                    Delete Recipe
-                  </Button>
-                </div>
-              </div>
+              <SavedRecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}
